@@ -1,0 +1,51 @@
+#include <Arduino.h>
+#include <ESP8266WiFi.h>
+#include <ESP8266WiFiMulti.h>
+#include <ESP8266HTTPClient.h>
+#include <WiFiClient.h>
+
+ESP8266WiFiMulti WiFiMulti;
+void setup() {
+  Serial.begin(115200);
+  Serial.println();
+  Serial.println();
+  Serial.println();
+  for (uint8_t t = 4; t > 0; t--) {
+    Serial.printf("[SETUP] WAIT %d...\n", t);
+    Serial.flush();
+    delay(1000);
+  }
+  WiFi.mode(WIFI_STA);
+  WiFiMulti.addAP("MIT3", "12345678c");
+}
+
+void loop() {
+  
+  if ((WiFiMulti.run() == WL_CONNECTED)) {
+    WiFiClient client;
+    long value = 99999;   // 센서값 대입처리
+    String strVal = String(value);
+    String result = "http://192.168.3.18:8090/senser/mp7?result="+strVal;   //보낼 URL 입력
+    HTTPClient http;
+    Serial.print("[HTTP] begin...\n");
+    if (http.begin(client, result)) {  // HTTP
+    Serial.print("[HTTP] GET...\n");
+     
+      int httpCode = http.GET();
+      if (httpCode > 0) {
+        Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+        if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
+          String payload = http.getString();  //소스코드는 여기에 담겨온다.
+          Serial.println(payload);
+        }
+      } else {
+        Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+      }
+      http.end();
+    } else {
+      Serial.printf("[HTTP} Unable to connect\n");
+    }
+  }
+
+  delay(10000);
+}
